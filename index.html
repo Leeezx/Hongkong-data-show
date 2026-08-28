@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hong Kong Remote Sensing Water Quality Monitoring Demonstration System</title>
+  <link rel="stylesheet" href="assets/leaflet/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <h1>Hong Kong Remote Sensing Water Quality Monitoring Demonstration System</h1>
+      <nav id="primary-nav" class="app-nav" aria-label="Primary navigation">
+        <button data-section="environment" class="nav-link is-active">Water Environment Data</button>
+        <button data-section="historical" class="nav-link">Historical Water Quality</button>
+        <button data-section="forecasts" class="nav-link">Water Quality Forecasts</button>
+        <button data-section="alerts" class="nav-link">Risk Alerts &amp; Recommended Actions</button>
+      </nav>
+    </header>
+    <main id="data-view" class="data-view">
+      <aside id="sidebar" class="sidebar">
+        <section class="sidebar-section"><h2>Data Layers</h2><div id="layer-list" class="layer-list"></div></section>
+        <section class="sidebar-section"><h2>Opacity</h2><input id="opacity" type="range" min="0" max="1" step="0.05" value="0.75"><output id="opacity-value">75%</output></section>
+        <section class="sidebar-section"><h2>Timeline</h2><div id="timeline-label" class="timeline-label">Single time step</div><div class="timeline"><button disabled aria-label="Previous time step">◀</button><div class="timeline-rail"><span></span></div><button disabled aria-label="Next time step">▶</button></div><button class="play-button" disabled>▶ Play</button></section>
+        <section class="sidebar-section is-disabled" aria-disabled="true"><h2>Spatial Query</h2><p>Spatial query is not available in this demonstration.</p></section>
+        <section class="sidebar-section"><h2>Layer Information</h2><p id="layer-description"></p></section>
+      </aside>
+      <section class="map-area" aria-label="Hong Kong water-quality map">
+        <div id="map"></div>
+        <div id="map-notice" class="map-notice" aria-live="polite" hidden></div>
+        <aside id="legend" class="legend" aria-label="Map legend"></aside>
+      </section>
+    </main>
+    <main id="placeholder-view" class="placeholder-view" hidden><div><h2></h2><p>Demonstration module — no functionality implemented</p></div></main>
+  </div>
+  <script src="assets/leaflet/leaflet.js"></script>
+  <script src="assets/metadata.js"></script>
+  <script src="assets/map-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
