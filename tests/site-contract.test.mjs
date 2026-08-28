@@ -22,6 +22,10 @@ test('shell contains approved title, navigation, and local assets', () => {
   }
 })
 
+test('opacity range control has a programmatic accessible label', () => {
+  assert.match(html, /<label[^>]+for=["']opacity["'][^>]*>[^<]*Opacity/i)
+})
+
 test('approved enlarged typography tokens are present', () => {
   assert.match(css, /--header-height:\s*58px/)
   assert.match(css, /--sidebar-width:\s*320px/)

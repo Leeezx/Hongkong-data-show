@@ -1,6 +1,8 @@
 (function (global) {
   'use strict'
 
+  const FALLBACK_MAP_BOUNDS = [[22.1367246, 113.8172408], [22.5683333, 114.5024867]]
+
   const SECTIONS = {
     environment: {
       title: 'Water Environment Data', defaultVariableId: 'wst',
@@ -45,15 +47,46 @@
     return variable?.datasetId ?? null
   }
 
-  const publicApi = { SECTIONS, createInitialState, getSection, selectSection, selectVariable, getActiveDataset }
+  const isBounds = (value) => Array.isArray(value) && value.length === 2 && value.every((point) => (
+    Array.isArray(point) && point.length === 2 && point.every((coordinate) => Number.isFinite(coordinate))
+  ))
+
+  const isDataset = (value) => Boolean(
+    value && typeof value === 'object' && typeof value.image === 'string' && value.image.length > 0 &&
+    typeof value.unit === 'string' && isBounds(value.bounds) &&
+    Array.isArray(value.breaks) && value.breaks.every((entry) => Number.isFinite(entry)) &&
+    Array.isArray(value.labels) && Array.isArray(value.colors) &&
+    value.labels.length > 0 && value.labels.length === value.colors.length
+  )
+
+  const normalizeMetadata = (rawMetadata) => {
+    const source = rawMetadata && typeof rawMetadata === 'object' ? rawMetadata : {}
+    const datasets = {}
+    if (source.datasets && typeof source.datasets === 'object') {
+      for (const [datasetId, dataset] of Object.entries(source.datasets)) {
+        if (isDataset(dataset)) datasets[datasetId] = dataset
+      }
+    }
+    return {
+      mapBounds: isBounds(source.mapBounds)
+        ? source.mapBounds
+        : FALLBACK_MAP_BOUNDS.map((point) => point.slice()),
+      datasets
+    }
+  }
+
+  const publicApi = { SECTIONS, createInitialState, getSection, selectSection, selectVariable, getActiveDataset, normalizeMetadata }
   if (typeof module !== 'undefined' && module.exports) module.exports = publicApi
   global.HK_DEMO_APP = publicApi
 
   if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => initialize(publicApi))
 
   function initialize(api) {
-    const metadata = global.HK_DEMO_METADATA
+    const rawMetadata = global.HK_DEMO_METADATA
+    const metadata = api.normalizeMetadata(rawMetadata)
     const mapData = global.HK_MAP_DATA
+    const metadataWarning = !rawMetadata || typeof rawMetadata !== 'object' ||
+      !isBounds(rawMetadata.mapBounds) || !rawMetadata.datasets || typeof rawMetadata.datasets !== 'object'
     const elements = {
       nav: document.getElementById('primary-nav'), dataView: document.getElementById('data-view'),
       placeholder: document.getElementById('placeholder-view'), sidebar: document.getElementById('sidebar'),
@@ -79,7 +112,8 @@
     waterPane.style.zIndex = '600'
 
     function showNotice(message) {
-      const visibleMessage = message || (vectorDataWarning ? 'Map boundary overlays unavailable' : '')
+      const visibleMessage = message || (vectorDataWarning ? 'Map boundary overlays unavailable' : '') ||
+        (metadataWarning ? 'Sample metadata unavailable; using fallback map extent' : '')
       elements.notice.textContent = visibleMessage
       elements.notice.hidden = !visibleMessage
     }
@@ -155,6 +189,11 @@
         return
       }
       const dataset = metadata.datasets[datasetId]
+      if (!dataset) {
+        renderLegend(null)
+        showNotice('Sample layer could not be loaded')
+        return
+      }
       showNotice('')
       const raster = L.imageOverlay(dataset.image, dataset.bounds, { pane: 'raster', opacity: state.opacity, interactive: false })
       activeRaster = raster

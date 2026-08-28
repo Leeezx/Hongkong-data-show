@@ -35,3 +35,32 @@ test('approved variable catalogs remain exact', () => {
     'Chlorophyll-a', 'Turbidity', 'Total Suspended Solids', 'Total Phosphorus', 'Total Nitrogen'
   ])
 })
+
+test('missing metadata falls back to the known Hong Kong extent', () => {
+  const normalized = app.normalizeMetadata(undefined)
+  assert.deepEqual(normalized.mapBounds, [[22.1367246, 113.8172408], [22.5683333, 114.5024867]])
+  assert.deepEqual(normalized.datasets, {})
+})
+
+test('malformed dataset entries are ignored while valid entries remain usable', () => {
+  const normalized = app.normalizeMetadata({
+    mapBounds: [[1, 2], [3, 4]],
+    datasets: {
+      wst: { image: 'assets/wst.png' },
+      chla: {
+        image: 'assets/chla.png', unit: 'mg/m³', bounds: [[1, 2], [3, 4]],
+        breaks: [0, 1], labels: ['0–1'], colors: ['#fff']
+      }
+    }
+  })
+  assert.equal(normalized.datasets.wst, undefined)
+  assert.equal(normalized.datasets.chla.image, 'assets/chla.png')
+})
+
+test('a missing dataset entry is safe to request after metadata normalization', () => {
+  const normalized = app.normalizeMetadata({
+    mapBounds: [[1, 2], [3, 4]],
+    datasets: { chla: { image: 'assets/chla.png', unit: 'mg/m³', bounds: [[1, 2], [3, 4]], breaks: [0, 1], labels: ['0–1'], colors: ['#fff'] } }
+  })
+  assert.equal(normalized.datasets.wst, undefined)
+})

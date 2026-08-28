@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
+import crypto from 'node:crypto'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -31,4 +32,34 @@ test('generated assets expose the approved Hong Kong datasets', () => {
   assert.equal(mapData.administrative.features.length, 31)
   assert.equal(mapData.water.type, 'FeatureCollection')
   assert.equal(mapData.water.features.length, 3757)
+})
+
+test('classified PNGs have the expected dimensions and RGBA color type', () => {
+  const expected = {
+    'assets/wst.png': [764, 481],
+    'assets/chla.png': [3666, 2317]
+  }
+  for (const [name, [width, height]] of Object.entries(expected)) {
+    const png = fs.readFileSync(path.join(root, name))
+    assert.deepEqual(Array.from(png.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10])
+    assert.equal(png.readUInt32BE(16), width, `${name} width changed`)
+    assert.equal(png.readUInt32BE(20), height, `${name} height changed`)
+    assert.equal(png[24], 8, `${name} bit depth changed`)
+    assert.equal(png[25], 6, `${name} must remain RGBA`)
+  }
+})
+
+test('untracked source data matches the committed SHA-256 baseline', () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'tests/source-data.sha256.json'), 'utf8'))
+  const sourcePaths = fs.readdirSync(path.join(root, '相关数据'))
+    .filter((name) => !name.startsWith('~$'))
+    .map((name) => `相关数据/${name}`)
+    .sort()
+  assert.deepEqual(sourcePaths, Object.keys(manifest).sort(), 'source manifest must cover the complete baseline set')
+  for (const [relativePath, expectedHash] of Object.entries(manifest)) {
+    const filePath = path.join(root, relativePath)
+    assert.equal(fs.existsSync(filePath), true, `${relativePath} is missing`)
+    const actualHash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+    assert.equal(actualHash, expectedHash, `${relativePath} changed`)
+  }
 })
