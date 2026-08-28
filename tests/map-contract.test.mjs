@@ -21,6 +21,18 @@ test('vector overlays use panes above the raster pane', () => {
   assert.match(source, /waterPane\.style\.zIndex\s*=\s*['"]600['"]\s*$/m)
 })
 
+test('malformed vector data does not block map controls and announces a warning', () => {
+  assert.match(source, /isFeatureCollection\(/)
+  assert.match(source, /Map boundary overlays unavailable/)
+  assert.match(source, /if \(.*isFeatureCollection\(.*administrative/)
+  assert.match(source, /if \(.*isFeatureCollection\(.*water/)
+})
+
+test('stale raster errors cannot clear a newer active overlay', () => {
+  assert.match(source, /const raster = L\.imageOverlay\(/)
+  assert.match(source, /if \(activeRaster !== raster\) return/)
+})
+
 test('unsupported data clears stale raster and announces the empty state', () => {
   assert.match(source, /activeRaster\.remove\(\)/)
   assert.match(source, /No sample data available/)

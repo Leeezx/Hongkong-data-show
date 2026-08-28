@@ -64,6 +64,7 @@
     }
     let state = api.createInitialState()
     let activeRaster = null
+    let vectorDataWarning = false
 
     const map = L.map('map', { zoomControl: true, attributionControl: true })
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -76,18 +77,40 @@
     administrativePane.style.zIndex = '500'
     const waterPane = map.createPane('water')
     waterPane.style.zIndex = '600'
-    L.geoJSON(mapData.administrative, {
-      pane: 'administrative', style: { color: '#66717d', weight: 1.2, opacity: 0.8, fillOpacity: 0 }
-    }).addTo(map)
-    L.geoJSON(mapData.water, {
-      pane: 'water', style: { color: '#4e7c91', weight: 0.8, opacity: 0.6, fillOpacity: 0 }
-    }).addTo(map)
-    map.fitBounds(metadata.mapBounds, { padding: [18, 18] })
 
     function showNotice(message) {
-      elements.notice.textContent = message
-      elements.notice.hidden = !message
+      const visibleMessage = message || (vectorDataWarning ? 'Map boundary overlays unavailable' : '')
+      elements.notice.textContent = visibleMessage
+      elements.notice.hidden = !visibleMessage
     }
+
+    function isFeatureCollection(value) {
+      return Boolean(value && value.type === 'FeatureCollection' && Array.isArray(value.features))
+    }
+
+    if (isFeatureCollection(mapData?.administrative)) {
+      try {
+        L.geoJSON(mapData.administrative, {
+          pane: 'administrative', style: { color: '#66717d', weight: 1.2, opacity: 0.8, fillOpacity: 0 }
+        }).addTo(map)
+      } catch {
+        vectorDataWarning = true
+      }
+    } else {
+      vectorDataWarning = true
+    }
+    if (isFeatureCollection(mapData?.water)) {
+      try {
+        L.geoJSON(mapData.water, {
+          pane: 'water', style: { color: '#4e7c91', weight: 0.8, opacity: 0.6, fillOpacity: 0 }
+        }).addTo(map)
+      } catch {
+        vectorDataWarning = true
+      }
+    } else {
+      vectorDataWarning = true
+    }
+    map.fitBounds(metadata.mapBounds, { padding: [18, 18] })
 
     function clearRaster() {
       if (activeRaster) {
@@ -133,9 +156,15 @@
       }
       const dataset = metadata.datasets[datasetId]
       showNotice('')
-      activeRaster = L.imageOverlay(dataset.image, dataset.bounds, { pane: 'raster', opacity: state.opacity, interactive: false })
-      activeRaster.on('error', () => { clearRaster(); renderLegend(null); showNotice('Sample layer could not be loaded') })
-      activeRaster.addTo(map)
+      const raster = L.imageOverlay(dataset.image, dataset.bounds, { pane: 'raster', opacity: state.opacity, interactive: false })
+      activeRaster = raster
+      raster.on('error', () => {
+        if (activeRaster !== raster) return
+        clearRaster()
+        renderLegend(null)
+        showNotice('Sample layer could not be loaded')
+      })
+      raster.addTo(map)
       renderLegend(datasetId)
     }
 
