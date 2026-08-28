@@ -32,3 +32,10 @@ test('approved enlarged typography tokens are present', () => {
   assert.match(css, /--timeline-size:\s*17px/)
   assert.match(css, /--legend-size:\s*14px/)
 })
+
+test('README documents double-click and offline behavior', () => {
+  const readme = fs.readFileSync(new URL('../README.md', import.meta.url), 'utf8')
+  assert.match(readme, /double-click `index\.html`/i)
+  assert.match(readme, /offline/i)
+  assert.match(readme, /No installation/i)
+})
