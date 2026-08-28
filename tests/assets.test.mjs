@@ -4,6 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
 import crypto from 'node:crypto'
+import os from 'node:os'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -12,6 +13,27 @@ function loadBrowserScript(relativePath) {
   vm.createContext(context)
   vm.runInContext(fs.readFileSync(path.join(root, relativePath), 'utf8'), context)
   return context.window
+}
+
+function verifySourceDataIntegrity(projectRoot) {
+  const sourceDir = path.join(projectRoot, '相关数据')
+  if (!fs.existsSync(sourceDir)) {
+    return { skipped: true, reason: 'source data directory 相关数据/ is unavailable in this workspace' }
+  }
+
+  const manifest = JSON.parse(fs.readFileSync(path.join(projectRoot, 'tests/source-data.sha256.json'), 'utf8'))
+  const sourcePaths = fs.readdirSync(sourceDir)
+    .filter((name) => !name.startsWith('~$'))
+    .map((name) => `相关数据/${name}`)
+    .sort()
+  assert.deepEqual(sourcePaths, Object.keys(manifest).sort(), 'source manifest must cover the complete baseline set')
+  for (const [relativePath, expectedHash] of Object.entries(manifest)) {
+    const filePath = path.join(projectRoot, relativePath)
+    assert.equal(fs.existsSync(filePath), true, `${relativePath} is missing`)
+    const actualHash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+    assert.equal(actualHash, expectedHash, `${relativePath} changed`)
+  }
+  return { skipped: false, fileCount: Object.keys(manifest).length }
 }
 
 test('generated assets expose the approved Hong Kong datasets', () => {
@@ -49,17 +71,19 @@ test('classified PNGs have the expected dimensions and RGBA color type', () => {
   }
 })
 
-test('untracked source data matches the committed SHA-256 baseline', () => {
-  const manifest = JSON.parse(fs.readFileSync(path.join(root, 'tests/source-data.sha256.json'), 'utf8'))
-  const sourcePaths = fs.readdirSync(path.join(root, '相关数据'))
-    .filter((name) => !name.startsWith('~$'))
-    .map((name) => `相关数据/${name}`)
-    .sort()
-  assert.deepEqual(sourcePaths, Object.keys(manifest).sort(), 'source manifest must cover the complete baseline set')
-  for (const [relativePath, expectedHash] of Object.entries(manifest)) {
-    const filePath = path.join(root, relativePath)
-    assert.equal(fs.existsSync(filePath), true, `${relativePath} is missing`)
-    const actualHash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
-    assert.equal(actualHash, expectedHash, `${relativePath} changed`)
+test('untracked source data matches the committed SHA-256 baseline when available', (t) => {
+  const result = verifySourceDataIntegrity(root)
+  if (result.skipped) t.skip(result.reason)
+})
+
+test('source-integrity verification reports a clear skip when source data is absent', () => {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'hk-water-quality-'))
+  try {
+    assert.deepEqual(verifySourceDataIntegrity(fixtureRoot), {
+      skipped: true,
+      reason: 'source data directory 相关数据/ is unavailable in this workspace'
+    })
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true })
   }
 })
