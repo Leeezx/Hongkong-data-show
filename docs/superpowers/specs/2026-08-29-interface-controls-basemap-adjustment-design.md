@@ -70,4 +70,3 @@ Follow red-green-refactor:
 - No Layer Information heading or content remains.
 - Exactly the same ArcGIS World Street Map basemap used by the reference repository remains configured.
 - Administrative/water overlays, sample rasters, legends, opacity, navigation, automatic extent fitting, local double-click opening, and placeholder modules continue to behave as before.
-

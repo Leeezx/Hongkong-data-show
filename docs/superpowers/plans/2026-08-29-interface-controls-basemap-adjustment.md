@@ -219,4 +219,3 @@ git commit -m "fix: refine demonstration controls"
 ```
 
 Expected: one focused implementation commit containing the test-first contract and minimum production changes.
-
