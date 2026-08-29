@@ -36,7 +36,7 @@ $adminJson = Join-Path $generatedDir 'administrative.geojson'
 $waterJson = Join-Path $generatedDir 'water.geojson'
 
 @'
-0 0 0 0 0
+0 232 232 232 128
 1 102 169 234 255
 2 201 242 177 255
 3 255 242 102 255
@@ -45,7 +45,7 @@ $waterJson = Join-Path $generatedDir 'water.geojson'
 '@ | Set-Content -LiteralPath $wstColors -Encoding ascii
 
 @'
-0 0 0 0 0
+0 232 232 232 128
 1 102 169 234 255
 2 201 242 177 255
 3 51 224 0 255

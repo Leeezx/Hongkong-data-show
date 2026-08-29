@@ -5,6 +5,7 @@ import path from 'node:path'
 import vm from 'node:vm'
 import crypto from 'node:crypto'
 import os from 'node:os'
+import zlib from 'node:zlib'
 
 const root = path.resolve(import.meta.dirname, '..')
 
@@ -34,6 +35,75 @@ function verifySourceDataIntegrity(projectRoot) {
     assert.equal(actualHash, expectedHash, `${relativePath} changed`)
   }
   return { skipped: false, fileCount: Object.keys(manifest).length }
+}
+
+function paethPredictor(a, b, c) {
+  const estimate = a + b - c
+  const distanceA = Math.abs(estimate - a)
+  const distanceB = Math.abs(estimate - b)
+  const distanceC = Math.abs(estimate - c)
+  if (distanceA <= distanceB && distanceA <= distanceC) return a
+  return distanceB <= distanceC ? b : c
+}
+
+function decodeRgbaPng(filePath) {
+  const png = fs.readFileSync(filePath)
+  assert.deepEqual(Array.from(png.subarray(0, 8)), [137, 80, 78, 71, 13, 10, 26, 10])
+
+  let width = 0
+  let height = 0
+  let bitDepth = 0
+  let colorType = 0
+  let interlace = 0
+  const compressed = []
+  for (let offset = 8; offset < png.length;) {
+    const length = png.readUInt32BE(offset)
+    const type = png.toString('ascii', offset + 4, offset + 8)
+    const data = png.subarray(offset + 8, offset + 8 + length)
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0)
+      height = data.readUInt32BE(4)
+      bitDepth = data[8]
+      colorType = data[9]
+      interlace = data[12]
+    } else if (type === 'IDAT') {
+      compressed.push(data)
+    }
+    offset += length + 12
+  }
+
+  assert.equal(bitDepth, 8, `${filePath} must use 8-bit channels`)
+  assert.equal(colorType, 6, `${filePath} must use RGBA color type`)
+  assert.equal(interlace, 0, `${filePath} must remain non-interlaced`)
+
+  const bytesPerPixel = 4
+  const rowLength = width * bytesPerPixel
+  const filtered = zlib.inflateSync(Buffer.concat(compressed))
+  const pixels = Buffer.alloc(width * height * bytesPerPixel)
+  let inputOffset = 0
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = filtered[inputOffset]
+    inputOffset += 1
+    const rowOffset = y * rowLength
+    for (let x = 0; x < rowLength; x += 1) {
+      const encoded = filtered[inputOffset]
+      inputOffset += 1
+      const left = x >= bytesPerPixel ? pixels[rowOffset + x - bytesPerPixel] : 0
+      const up = y > 0 ? pixels[rowOffset - rowLength + x] : 0
+      const upLeft = y > 0 && x >= bytesPerPixel ? pixels[rowOffset - rowLength + x - bytesPerPixel] : 0
+      const predictor = filter === 0 ? 0
+        : filter === 1 ? left
+          : filter === 2 ? up
+            : filter === 3 ? Math.floor((left + up) / 2)
+              : filter === 4 ? paethPredictor(left, up, upLeft)
+                : null
+      assert.notEqual(predictor, null, `${filePath} uses unsupported PNG filter ${filter}`)
+      pixels[rowOffset + x] = (encoded + predictor) & 0xff
+    }
+  }
+
+  return { width, height, pixels }
 }
 
 test('generated assets expose the approved Hong Kong datasets', () => {
@@ -68,6 +138,30 @@ test('classified PNGs have the expected dimensions and RGBA color type', () => {
     assert.equal(png.readUInt32BE(20), height, `${name} height changed`)
     assert.equal(png[24], 8, `${name} bit depth changed`)
     assert.equal(png[25], 6, `${name} must remain RGBA`)
+  }
+})
+
+test('raster pipeline assigns the reference gray to both class-zero tables', () => {
+  const script = fs.readFileSync(path.join(root, 'scripts/prepare-data.ps1'), 'utf8')
+  assert.equal((script.match(/^0 232 232 232 128$/gm) ?? []).length, 2)
+  assert.doesNotMatch(script, /^0 0 0 0 0$/m)
+})
+
+test('classified PNGs encode no-data pixels as semi-transparent reference gray', () => {
+  for (const name of ['assets/wst.png', 'assets/chla.png']) {
+    const { pixels } = decodeRgbaPng(path.join(root, name))
+    let grayPixels = 0
+    let transparentPixels = 0
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+      const red = pixels[offset]
+      const green = pixels[offset + 1]
+      const blue = pixels[offset + 2]
+      const alpha = pixels[offset + 3]
+      if (red === 232 && green === 232 && blue === 232 && alpha === 128) grayPixels += 1
+      if (alpha === 0) transparentPixels += 1
+    }
+    assert.ok(grayPixels > 0, `${name} must contain reference-gray no-data pixels`)
+    assert.equal(transparentPixels, 0, `${name} class-zero pixels must not remain transparent`)
   }
 })
 
