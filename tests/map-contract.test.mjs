@@ -39,7 +39,15 @@ test('unsupported data clears stale raster and announces the empty state', () =>
   assert.match(source, /legend\.hidden = true/)
 })
 
+test('map uses exactly the reference ArcGIS World Street Map basemap', () => {
+  const tileLayerCalls = [...source.matchAll(/L\.tileLayer\(/g)]
+  assert.equal(tileLayerCalls.length, 1)
+  assert.match(source, /https:\/\/server\.arcgisonline\.com\/ArcGIS\/rest\/services\/World_Street_Map\/MapServer\/tile\/\{z\}\/\{y\}\/\{x\}/)
+})
+
 test('timeline and placeholders use approved copy', () => {
-  assert.match(source, /Single time step/)
+  assert.match(source, /2016-01-01/)
+  assert.doesNotMatch(source, /Single time step/)
+  assert.doesNotMatch(source, /layer-description|elements\.description/)
   assert.match(source, /Demonstration module — no functionality implemented/)
 })

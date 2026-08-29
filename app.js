@@ -92,7 +92,7 @@
       placeholder: document.getElementById('placeholder-view'), sidebar: document.getElementById('sidebar'),
       layerList: document.getElementById('layer-list'), opacity: document.getElementById('opacity'),
       opacityValue: document.getElementById('opacity-value'), timelineLabel: document.getElementById('timeline-label'),
-      description: document.getElementById('layer-description'), legend: document.getElementById('legend'),
+      legend: document.getElementById('legend'),
       notice: document.getElementById('map-notice')
     }
     let state = api.createInitialState()
@@ -237,9 +237,7 @@
         return
       }
       renderVariableList()
-      const variable = section.variables.find(({ id }) => id === state.variableId)
-      elements.description.textContent = variable?.datasetId ? 'Single real sample dataset.' : 'Variable listed for interface demonstration; no sample raster is available.'
-      elements.timelineLabel.textContent = 'Single time step'
+      elements.timelineLabel.textContent = '2016-01-01'
       elements.opacity.value = String(state.opacity)
       elements.opacityValue.value = `${Math.round(state.opacity * 100)}%`
       map.invalidateSize()

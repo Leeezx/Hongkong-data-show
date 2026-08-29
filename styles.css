@@ -29,7 +29,6 @@ button, input { font: inherit; }
 .sidebar-section h2 { margin: 0 0 9px; color: #333; font-size: var(--section-title-size); }
 .control-label { display: block; margin: 0 0 9px; color: #333; font-size: var(--section-title-size); font-weight: 600; }
 .sidebar-section p { margin: 5px 0; color: #5b6570; font-size: 13px; line-height: 1.45; }
-.sidebar-section.is-disabled { opacity: .58; }
 .layer-list { display: grid; gap: 4px; }
 .layer-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 7px; padding: 7px 8px; border-radius: 4px; cursor: pointer; font-size: var(--variable-size); line-height: 1.35; }
 .layer-item:hover { background: #e8ecf1; }
@@ -40,8 +39,24 @@ button, input { font: inherit; }
 #opacity-value { margin-left: 8px; color: #667; font-size: 13px; }
 .timeline-label { margin-bottom: 8px; color: var(--header-bg); font-size: var(--timeline-size); font-weight: 700; }
 .timeline { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; gap: 8px; }
-.timeline button, .play-button { border: 1px solid #c7ced6; border-radius: 4px; background: white; color: #89929c; }
+.timeline button, .play-button {
+  border: 1px solid #c7ced6;
+  border-radius: 4px;
+  background: white;
+  color: #4d5966;
+  cursor: pointer;
+}
 .timeline button { height: 28px; }
+.timeline button:hover, .play-button:hover {
+  border-color: var(--primary);
+  background: #f4f8ff;
+  color: var(--primary);
+}
+.timeline button:focus-visible, .play-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.timeline button:active, .play-button:active { transform: translateY(1px); }
 .timeline-rail { position: relative; height: 9px; border-radius: 5px; background: #d0d0d0; }
 .timeline-rail::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 50%; border-radius: inherit; background: var(--primary); }
 .timeline-rail span { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; transform: translate(-50%, -50%); border: 2px solid white; border-radius: 50%; background: var(--primary); box-shadow: 0 1px 3px rgb(0 0 0 / 25%); }

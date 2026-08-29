@@ -43,3 +43,25 @@ test('README documents double-click and offline behavior', () => {
   assert.match(readme, /offline/i)
   assert.match(readme, /No installation/i)
 })
+
+test('timeline controls are enabled no-op presentation controls for the fixed sample date', () => {
+  const timelineSection = html.match(/<section class="sidebar-section"><h2>Timeline<\/h2>[\s\S]*?<\/section>/)?.[0]
+  assert.ok(timelineSection)
+  assert.match(timelineSection, /id="timeline-label"[^>]*>2016-01-01<\/div>/)
+  assert.doesNotMatch(timelineSection, /\sdisabled(?:\s|>)/)
+  assert.match(timelineSection, /aria-label="Previous time step"/)
+  assert.match(timelineSection, /aria-label="Next time step"/)
+  assert.match(timelineSection, />▶ Play<\/button>/)
+  assert.match(css, /\.timeline button[^}]*cursor:\s*pointer/s)
+  assert.match(css, /\.timeline button:hover/)
+  assert.match(css, /\.timeline button:focus-visible/)
+})
+
+test('spatial query looks available while layer information is absent', () => {
+  const querySection = html.match(/<section class="sidebar-section"><h2>Spatial Query<\/h2>[\s\S]*?<\/section>/)?.[0]
+  assert.ok(querySection)
+  assert.match(querySection, /Click the map to query pixel values; hold Shift and drag to select an area\./)
+  assert.doesNotMatch(querySection, /is-disabled|aria-disabled/)
+  assert.doesNotMatch(html, /Layer Information|layer-description/)
+  assert.doesNotMatch(css, /\.sidebar-section\.is-disabled/)
+})
