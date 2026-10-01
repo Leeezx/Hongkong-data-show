@@ -1,4 +1,4 @@
-"""Convert website-material rasters to small browser-ready RGBA overlays."""
+"""Convert source-data rasters to small browser-ready RGBA overlays."""
 from pathlib import Path
 import json
 import numpy as np
@@ -60,28 +60,28 @@ def save(key, path, unit, rgb=False, labels=None):
                  "breaks": breaks, "labels": legend_labels, "colors": colors}
 
 def src(folder, name):
-    return ROOT / "website-material" / folder / name
+    return ROOT / "source-data" / folder / name
 
 # Function 1: environmental indicators.
-save("water-extent", src("function1", "water-extent.tif"), "—")
-save("chal-index", src("function1", "Chal-index.tif"), "—", rgb=True)
-save("pr", src("function1", "Pr.tif"), "mm/day")
-save("srad", src("function1", "SRAD.tif"), "W/m²")
-save("air-temperature", src("function1", "T.tif"), "°C")
-save("vv-vh", src("function1", "VV-VH.tif"), "—", rgb=True)
+save("water-extent", src("environment", "water-extent.tif"), "—")
+save("chal-index", src("environment", "Chal-index.tif"), "—", rgb=True)
+save("pr", src("environment", "Pr.tif"), "mm/day")
+save("srad", src("environment", "SRAD.tif"), "W/m²")
+save("air-temperature", src("environment", "T.tif"), "°C")
+save("vv-vh", src("environment", "VV-VH.tif"), "—", rgb=True)
 # Keep the existing classified sample so its dimensions and legend remain stable.
 DATA["wst"] = {"image": "assets/wst.png", "unit": "°C", "bounds": [[22.1362852, 113.8165465], [22.5683749, 114.5028594]],
                 "breaks": [15, 20, 25, 30, 35, 40], "labels": ["15–20", "20–25", "25–30", "30–35", "35–40"],
                 "colors": ["#66a9ea", "#c9f2b1", "#fff266", "#f2a000", "#e54400"]}
 
 # Functions 2 and 3 share the supplied model rasters.
-for folder, prefix in [("function2", "hist"), ("function3", "forecast")]:
+for folder, prefix in [("historical", "hist"), ("forecasts", "forecast")]:
     for name, key, unit in [("Chla.tif", "chla", "mg/m³"), ("Turbidity.tif", "turbidity", "NTU"),
                             ("TSS.tif", "tss", "mg/L"), ("Total_Phosphorus.tif", "total-phosphorus", "mg/L"),
                             ("Total_Nitrogen.tif", "total-nitrogen", "mg/L")]:
         save(f"{prefix}-{key}", src(folder, name), unit)
 
-save("risk", src("function4", "hongkong.tif"), "—", rgb=True)
+save("risk", src("alerts", "hongkong.tif"), "—", rgb=True)
 
 (OUT / "metadata.json").write_text(json.dumps(DATA, ensure_ascii=False, indent=2), encoding="utf-8")
 (OUT / "metadata.js").write_text("window.HK_MATERIAL_METADATA = " + json.dumps(DATA, ensure_ascii=False) + ";\n", encoding="utf-8")

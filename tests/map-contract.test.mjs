@@ -21,6 +21,12 @@ test('API-backed layers use live Web Mercator tiles with PNG fallback', () => {
   assert.match(backend, /from_bounds\(/)
 })
 
+test('default rasters use the organized source-data module folders', () => {
+  for (const folder of ['environment', 'historical', 'forecasts', 'alerts']) {
+    assert.match(backend, new RegExp(`source-data/${folder}/`))
+  }
+})
+
 test('vector overlays use panes above the raster pane', () => {
   assert.match(source, /map\.createPane\(['"]raster['"]\)/)
   assert.match(source, /map\.createPane\(['"]administrative['"]\)/)

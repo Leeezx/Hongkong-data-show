@@ -68,15 +68,15 @@ def _default_layers() -> list[dict]:
         "forecast-total-nitrogen": "Total Nitrogen", "risk": "Hong Kong Risk Map",
     }
     source_paths = {
-        "water-extent": "website-material/function1/water-extent.tif", "wst": "website-material/function1/wst.tif",
-        "chal-index": "website-material/function1/Chal-index.tif", "vv-vh": "website-material/function1/VV-VH.tif",
-        "pr": "website-material/function1/Pr.tif", "air-temperature": "website-material/function1/T.tif",
-        "srad": "website-material/function1/SRAD.tif", "risk": "website-material/function4/hongkong.tif",
+        "water-extent": "source-data/environment/water-extent.tif", "wst": "source-data/environment/wst.tif",
+        "chal-index": "source-data/environment/Chal-index.tif", "vv-vh": "source-data/environment/VV-VH.tif",
+        "pr": "source-data/environment/Pr.tif", "air-temperature": "source-data/environment/T.tif",
+        "srad": "source-data/environment/SRAD.tif", "risk": "source-data/alerts/hongkong.tif",
     }
     for key, name in [("chla", "Chla.tif"), ("turbidity", "Turbidity.tif"), ("tss", "TSS.tif"),
                       ("total-phosphorus", "Total_Phosphorus.tif"), ("total-nitrogen", "Total_Nitrogen.tif")]:
-        source_paths[f"hist-{key}"] = f"website-material/function2/{name}"
-        source_paths[f"forecast-{key}"] = f"website-material/function3/{name}"
+        source_paths[f"hist-{key}"] = f"source-data/historical/{name}"
+        source_paths[f"forecast-{key}"] = f"source-data/forecasts/{name}"
     result = []
     for key, item in raw.items():
         if key not in sections:

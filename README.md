@@ -17,9 +17,9 @@ The page sends analytics to Google Analytics 4 and GoatCounter when online. The 
 
 - Water Environment Data → water extent, WST, Chal-index, SAR, precipitation, air temperature and downwelling radiation.
 - Historical Water Quality → Chlorophyll-a, turbidity, TSS, total phosphorus and total nitrogen.
-- Water Quality Forecasts → the supplied function3 model rasters for the same five water-quality variables.
+- Water Quality Forecasts → the supplied forecast model rasters for the same five water-quality variables.
 - Risk Alerts & Recommended Actions → the supplied Hong Kong RGB risk map.
 
-The source rasters remain in `website-material/`. `scripts/build-material-assets.py` converts the supplied examples to browser-sized fallback overlays and writes matching metadata; rerun it after replacing source rasters.
+The source rasters are organized under `source-data/` by module: `environment/`, `historical/`, `forecasts/`, and `alerts/`. `scripts/build-material-assets.py` converts the supplied examples to browser-sized fallback overlays and writes matching metadata; rerun it after replacing source rasters.
 
-For GitHub deployment, the large `website-material/` and `相关数据/` source folders are intentionally ignored. Copy `website-material/` to the server separately so the dynamic tile API can read the original GeoTIFFs.
+For GitHub deployment, the large `source-data/`, legacy `website-material/`, and `相关数据/` source folders are intentionally ignored. Copy `source-data/` to the server separately so the dynamic tile API can read the original GeoTIFFs.
