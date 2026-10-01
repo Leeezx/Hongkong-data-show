@@ -143,7 +143,7 @@ test('classified PNGs have the expected dimensions and RGBA color type', () => {
 
 test('raster pipeline assigns the reference gray to both class-zero tables', () => {
   const script = fs.readFileSync(path.join(root, 'scripts/prepare-data.ps1'), 'utf8')
-  assert.equal((script.match(/^0 232 232 232 128$/gm) ?? []).length, 2)
+  assert.equal((script.match(/^0 232 232 232 180$/gm) ?? []).length, 2)
   assert.doesNotMatch(script, /^0 0 0 0 0$/m)
 })
 
@@ -157,7 +157,7 @@ test('classified PNGs encode no-data pixels as semi-transparent reference gray',
       const green = pixels[offset + 1]
       const blue = pixels[offset + 2]
       const alpha = pixels[offset + 3]
-      if (red === 232 && green === 232 && blue === 232 && alpha === 128) grayPixels += 1
+      if (red === 232 && green === 232 && blue === 232 && alpha === 180) grayPixels += 1
       if (alpha === 0) transparentPixels += 1
     }
     assert.ok(grayPixels > 0, `${name} must contain reference-gray no-data pixels`)

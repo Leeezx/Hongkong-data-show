@@ -5,12 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hong Kong Remote Sensing Water Quality Monitoring Demonstration System</title>
   <link rel="stylesheet" href="assets/leaflet/leaflet.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261001-dynamic-tiles">
+  <!-- Google Analytics 4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-V28SBMMNE7"></script>
+  <script>
+    window.dataLayer = window.dataLayer || []
+    function gtag() { dataLayer.push(arguments) }
+    gtag('js', new Date())
+    gtag('config', 'G-V28SBMMNE7')
+  </script>
+  <!-- GoatCounter records pageviews and provides the public total counter. -->
+  <script data-goatcounter="https://lzx.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
   <div class="app-shell">
     <header class="app-header">
       <h1>Hong Kong Remote Sensing Water Quality Monitoring Demonstration System</h1>
+      <div class="site-counter" aria-live="polite" aria-label="网站累计访问量">
+        累计访问量：<span id="site-counter-value">加载中…</span>
+      </div>
       <nav id="primary-nav" class="app-nav" aria-label="Primary navigation">
         <button data-section="environment" class="nav-link is-active">Water Environment Data</button>
         <button data-section="historical" class="nav-link">Historical Water Quality</button>
@@ -45,7 +58,8 @@
   </div>
   <script src="assets/leaflet/leaflet.js"></script>
   <script src="assets/metadata.js"></script>
+  <script src="assets/material/metadata.js"></script>
   <script src="assets/map-data.js"></script>
-  <script src="app.js"></script>
+  <script src="app.js?v=20261001-dynamic-tiles"></script>
 </body>
 </html>

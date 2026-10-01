@@ -7,28 +7,39 @@
     environment: {
       title: 'Water Environment Data', defaultVariableId: 'wst',
       variables: [
-        { id: 'water-storage', label: 'Water Extent / Water Level / Storage' },
+        { id: 'water-storage', label: 'Water Extent / Water Level / Storage', datasetId: 'water-extent' },
         { id: 'wst', label: 'Water Surface Temperature', unit: '°C', datasetId: 'wst' },
-        { id: 'chlorophyll-index', label: 'Chlorophyll Index', unit: 'NDCI' },
+        { id: 'chlorophyll-index', label: 'Chlorophyll Index', unit: 'NDCI', datasetId: 'chal-index' },
         { id: 'turbidity-index', label: 'Turbidity Index' },
-        { id: 'sar-index', label: 'SAR Polarimetric Index' },
-        { id: 'precipitation', label: 'Precipitation' },
-        { id: 'air-temperature', label: 'Air Temperature' },
-        { id: 'downwelling-radiation', label: 'Downwelling Radiation' }
+        { id: 'sar-index', label: 'SAR Polarimetric Index', datasetId: 'vv-vh' },
+        { id: 'precipitation', label: 'Precipitation', unit: 'mm/day', datasetId: 'pr' },
+        { id: 'air-temperature', label: 'Air Temperature', unit: '°C', datasetId: 'air-temperature' },
+        { id: 'downwelling-radiation', label: 'Downwelling Radiation', unit: 'W/m²', datasetId: 'srad' }
       ]
     },
     historical: {
       title: 'Historical Water Quality', defaultVariableId: 'chla',
       variables: [
-        { id: 'chla', label: 'Chlorophyll-a', unit: 'mg/m³', datasetId: 'chla' },
-        { id: 'turbidity', label: 'Turbidity', unit: 'NTU' },
-        { id: 'tss', label: 'Total Suspended Solids', unit: 'mg/L' },
-        { id: 'total-phosphorus', label: 'Total Phosphorus' },
-        { id: 'total-nitrogen', label: 'Total Nitrogen' }
+        { id: 'chla', label: 'Chlorophyll-a', unit: 'mg/m³', datasetId: 'hist-chla' },
+        { id: 'turbidity', label: 'Turbidity', unit: 'NTU', datasetId: 'hist-turbidity' },
+        { id: 'tss', label: 'Total Suspended Solids', unit: 'mg/L', datasetId: 'hist-tss' },
+        { id: 'total-phosphorus', label: 'Total Phosphorus', unit: 'mg/L', datasetId: 'hist-total-phosphorus' },
+        { id: 'total-nitrogen', label: 'Total Nitrogen', unit: 'mg/L', datasetId: 'hist-total-nitrogen' }
       ]
     },
-    forecasts: { title: 'Water Quality Forecasts', defaultVariableId: null, variables: [] },
-    alerts: { title: 'Risk Alerts & Recommended Actions', defaultVariableId: null, variables: [] }
+    forecasts: {
+      title: 'Water Quality Forecasts', defaultVariableId: 'chla',
+      variables: [
+        { id: 'chla', label: 'Chlorophyll-a', unit: 'mg/m³', datasetId: 'forecast-chla' },
+        { id: 'turbidity', label: 'Turbidity', unit: 'NTU', datasetId: 'forecast-turbidity' },
+        { id: 'tss', label: 'Total Suspended Solids', unit: 'mg/L', datasetId: 'forecast-tss' },
+        { id: 'total-phosphorus', label: 'Total Phosphorus', unit: 'mg/L', datasetId: 'forecast-total-phosphorus' },
+        { id: 'total-nitrogen', label: 'Total Nitrogen', unit: 'mg/L', datasetId: 'forecast-total-nitrogen' }
+      ]
+    },
+    alerts: { title: 'Risk Alerts & Recommended Actions', defaultVariableId: 'risk', variables: [
+      { id: 'risk', label: 'Hong Kong Risk Map', unit: '—', datasetId: 'risk' }
+    ] }
   }
 
   const createInitialState = () => ({ sectionId: 'environment', variableId: 'wst', opacity: 0.75 })
@@ -79,10 +90,43 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = publicApi
   global.HK_DEMO_APP = publicApi
 
-  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => initialize(publicApi))
+  if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+    initializeVisitCounter()
+    initialize(publicApi)
+  })
+
+  function initializeVisitCounter() {
+    const valueElement = document.getElementById('site-counter-value')
+    if (!valueElement) return
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
+
+    fetch('https://lzx.goatcounter.com/counter/TOTAL.json', {
+      mode: 'cors', cache: 'no-store', signal: controller.signal
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error(`Counter request failed: ${response.status}`)
+        return response.json()
+      })
+      .then((data) => {
+        const count = data && (typeof data.count === 'string' || typeof data.count === 'number')
+          ? String(data.count)
+          : ''
+        if (!count) throw new Error('Counter response did not contain a count')
+        valueElement.textContent = count
+      })
+      .catch(() => {
+        valueElement.textContent = '暂不可用'
+      })
+      .finally(() => clearTimeout(timeoutId))
+  }
 
   function initialize(api) {
-    const rawMetadata = global.HK_DEMO_METADATA
+    const rawMetadata = {
+      ...(global.HK_DEMO_METADATA || {}),
+      datasets: { ...(global.HK_DEMO_METADATA?.datasets || {}), ...(global.HK_MATERIAL_METADATA || {}) }
+    }
     const metadata = api.normalizeMetadata(rawMetadata)
     const mapData = global.HK_MAP_DATA
     const metadataWarning = !rawMetadata || typeof rawMetadata !== 'object' ||
@@ -98,6 +142,30 @@
     let state = api.createInitialState()
     let activeRaster = null
     let vectorDataWarning = false
+    const dynamicLayers = { environment: [], historical: [], forecasts: [], alerts: [] }
+    const variablesFor = (sectionId) => [
+      ...api.getSection(sectionId).variables,
+      ...(dynamicLayers[sectionId] || [])
+    ]
+    const activeDataset = () => variablesFor(state.sectionId)
+      .find(({ id }) => id === state.variableId)?.datasetId ?? null
+    const selectVariable = (nextState, variableId) => (
+      variablesFor(nextState.sectionId).some(({ id }) => id === variableId)
+        ? { ...nextState, variableId }
+        : nextState
+    )
+    function mergeServerLayers(serverLayers) {
+      serverLayers.forEach((layer) => {
+        metadata.datasets[layer.id] = {
+          ...layer,
+          image: layer.image || `/api/layers/${layer.id}/preview`,
+          tileTemplate: layer.tileTemplate || `/api/tiles/${layer.id}/{z}/{x}/{y}.png`
+        }
+        if (layer.source === 'upload' && !dynamicLayers[layer.section].some(({ id }) => id === layer.id)) {
+          dynamicLayers[layer.section].push({ id: layer.id, label: layer.name, unit: layer.unit, datasetId: layer.id })
+        }
+      })
+    }
 
     const map = L.map('map', { zoomControl: true, attributionControl: true })
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
@@ -160,7 +228,7 @@
         elements.legend.replaceChildren()
         return
       }
-      const variable = api.getSection(state.sectionId).variables.find(({ id }) => id === state.variableId)
+      const variable = variablesFor(state.sectionId).find(({ id }) => id === state.variableId)
       const title = document.createElement('h3')
       title.textContent = `${variable.label} (${dataset.unit})`
       const fragment = document.createDocumentFragment()
@@ -182,7 +250,7 @@
 
     function renderMapData() {
       clearRaster()
-      const datasetId = api.getActiveDataset(state)
+      const datasetId = activeDataset()
       if (!datasetId) {
         renderLegend(null)
         showNotice('No sample data available')
@@ -195,9 +263,12 @@
         return
       }
       showNotice('')
-      const raster = L.imageOverlay(dataset.image, dataset.bounds, { pane: 'raster', opacity: state.opacity, interactive: false })
+      map.fitBounds(dataset.bounds || metadata.mapBounds, { padding: [18, 18] })
+      const raster = dataset.tileTemplate
+        ? L.tileLayer(dataset.tileTemplate, { pane: 'raster', opacity: state.opacity, minZoom: 0, maxZoom: 22, maxNativeZoom: 18 })
+        : L.imageOverlay(dataset.image, dataset.bounds, { pane: 'raster', opacity: state.opacity, interactive: false })
       activeRaster = raster
-      raster.on('error', () => {
+      raster.on('error tileerror', () => {
         if (activeRaster !== raster) return
         clearRaster()
         renderLegend(null)
@@ -210,12 +281,12 @@
     function renderVariableList() {
       const section = api.getSection(state.sectionId)
       const fragment = document.createDocumentFragment()
-      section.variables.forEach((variable) => {
+      variablesFor(state.sectionId).forEach((variable) => {
         const label = document.createElement('label')
         label.className = `layer-item${variable.id === state.variableId ? ' is-active' : ''}`
         const radio = document.createElement('input')
         radio.type = 'radio'; radio.name = 'layer'; radio.value = variable.id; radio.checked = variable.id === state.variableId
-        radio.addEventListener('change', () => { state = api.selectVariable(state, variable.id); render() })
+        radio.addEventListener('change', () => { state = selectVariable(state, variable.id); render() })
         const name = document.createElement('span'); name.textContent = variable.label
         label.append(radio, name)
         if (variable.unit) { const unit = document.createElement('span'); unit.className = 'layer-unit'; unit.textContent = `(${variable.unit})`; label.append(unit) }
@@ -258,5 +329,9 @@
     })
     window.addEventListener('resize', () => map.invalidateSize())
     render()
+    fetch('/api/layers')
+      .then((response) => response.ok ? response.json() : [])
+      .then((serverLayers) => { mergeServerLayers(serverLayers); render() })
+      .catch(() => { /* Direct file opening keeps the bundled static fallback. */ })
   }
 })(typeof window !== 'undefined' ? window : globalThis)

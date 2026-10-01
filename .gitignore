@@ -2,3 +2,12 @@
 scripts/.generated/
 .superpowers/
 .codegraph/
+runtime-data/
+.codex/
+findings.md
+progress.md
+task_plan.md
+website-material/
+相关数据/
+__pycache__/
+*.pyc

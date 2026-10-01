@@ -4,6 +4,7 @@ import fs from 'node:fs'
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8')
 const css = fs.readFileSync(new URL('../styles.css', import.meta.url), 'utf8')
+const app = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8')
 
 test('shell contains approved title, navigation, and local assets', () => {
   for (const text of [
@@ -20,6 +21,27 @@ test('shell contains approved title, navigation, and local assets', () => {
   for (const id of ['primary-nav', 'sidebar', 'map', 'legend', 'map-notice', 'placeholder-view', 'layer-list', 'opacity', 'timeline-label']) {
     assert.match(html, new RegExp(`id=["']${id}["']`))
   }
+})
+
+test('dynamic layer discovery is wired to the local API', () => {
+  assert.match(app, /fetch\('\/api\/layers'\)/)
+  assert.doesNotMatch(html, /upload-form|upload-file|Upload Raster Data/)
+})
+
+test('material metadata is loaded for all four data sections', () => {
+  assert.match(html, /assets\/material\/metadata\.js/)
+  for (const id of ['water-extent', 'hist-chla', 'forecast-chla', 'risk']) assert.match(app, new RegExp(id))
+})
+
+test('analytics and public visit counter are configured', () => {
+  assert.match(html, /href=["']styles\.css\?v=[^"']+["']/)
+  assert.match(html, /src=["']app\.js\?v=[^"']+["']/)
+  assert.match(html, /googletagmanager\.com\/gtag\/js\?id=G-V28SBMMNE7/)
+  assert.match(html, /gtag\(['"]config['"],\s*['"]G-V28SBMMNE7['"]\)/)
+  assert.match(html, /data-goatcounter=["']https:\/\/lzx\.goatcounter\.com\/count["']/)
+  assert.match(html, /id=["']site-counter-value["']/)
+  assert.match(app, /counter\/TOTAL\.json/)
+  assert.match(app, /AbortController/)
 })
 
 test('opacity range control has a programmatic accessible label', () => {

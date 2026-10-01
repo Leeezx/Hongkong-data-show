@@ -11,19 +11,20 @@ test('initial state shows WST in Water Environment Data', () => {
 test('switching functional sections selects their only real sample', () => {
   const state = app.selectSection(app.createInitialState(), 'historical')
   assert.equal(state.variableId, 'chla')
-  assert.equal(app.getActiveDataset(state), 'chla')
+  assert.equal(app.getActiveDataset(state), 'hist-chla')
 })
 
-test('unsupported variables never retain the previous raster', () => {
+test('environment variables select their supplied raster', () => {
   const state = app.selectVariable(app.createInitialState(), 'precipitation')
   assert.equal(state.variableId, 'precipitation')
-  assert.equal(app.getActiveDataset(state), null)
+  assert.equal(app.getActiveDataset(state), 'pr')
 })
 
-test('placeholder sections have no active dataset', () => {
-  const state = app.selectSection(app.createInitialState(), 'forecasts')
-  assert.equal(state.variableId, null)
-  assert.equal(app.getActiveDataset(state), null)
+test('forecast and alert sections select their supplied sample datasets', () => {
+  const forecast = app.selectSection(app.createInitialState(), 'forecasts')
+  assert.equal(app.getActiveDataset(forecast), 'forecast-chla')
+  const alerts = app.selectSection(app.createInitialState(), 'alerts')
+  assert.equal(app.getActiveDataset(alerts), 'risk')
 })
 
 test('approved variable catalogs remain exact', () => {

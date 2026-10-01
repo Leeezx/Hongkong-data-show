@@ -20,6 +20,7 @@ button, input { font: inherit; }
 .app-shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 .app-header { height: var(--header-height); flex: none; display: flex; align-items: center; gap: 22px; padding: 0 18px; background: var(--header-bg); color: white; }
 .app-header h1 { flex: none; margin: 0; font-size: var(--title-size); font-weight: 600; white-space: nowrap; }
+.site-counter { margin-left: auto; color: #d8e4eb; font-size: 12px; white-space: nowrap; }
 .app-nav { display: flex; min-width: 0; gap: 4px; overflow-x: auto; }
 .nav-link { border: 0; border-radius: 4px; padding: 9px 11px; background: transparent; color: rgb(255 255 255 / 78%); font-size: var(--nav-size); white-space: nowrap; cursor: pointer; }
 .nav-link:hover, .nav-link:focus-visible, .nav-link.is-active { background: rgb(255 255 255 / 14%); color: white; outline: none; }
@@ -76,6 +77,7 @@ button, input { font: inherit; }
 @media (max-width: 1024px) {
   .app-header { align-items: flex-start; height: auto; min-height: var(--header-height); padding-block: 12px; flex-wrap: wrap; }
   .app-header h1 { white-space: normal; }
+  .site-counter { margin-left: 0; }
   .app-nav { width: 100%; }
   .data-view { flex-direction: column; overflow-y: auto; }
   .sidebar { width: 100%; min-width: 0; max-height: 46vh; border-right: 0; border-bottom: 1px solid #ddd; }
